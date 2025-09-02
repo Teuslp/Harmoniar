@@ -4,25 +4,94 @@ const express = require('express');
 const router = express.Router();
 const auth = require('../middleware/auth');
 const Workout = require('../models/Workout');
-const User = require('../models/User');
+const { generateNewWorkoutPlan } = require('../utils/workoutGenerator');
 
-const { generateNewWorkoutPlan } = require('../utils/workoutGenerator'); 
+// --- Nova Lógica para Calcular a Sequência ---
+const calculateStreak = (completedDates, workoutPlan) => {
+    if (!completedDates || completedDates.length === 0) return 0;
+
+    const sortedDates = completedDates.map(d => new Date(d)).sort((a, b) => b - a);
+    const completedSet = new Set(sortedDates.map(d => {
+        d.setHours(0, 0, 0, 0);
+        return d.toISOString().slice(0, 10);
+    }));
+
+    let streak = 0;
+    let today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const todayString = today.toISOString().slice(0, 10);
+    if (completedSet.has(todayString)) {
+        streak = 1;
+    }
+
+    let currentDate = new Date(today);
+    currentDate.setDate(currentDate.getDate() - 1);
+
+    for (let i = 0; i < 365; i++) {
+        const dateString = currentDate.toISOString().slice(0, 10);
+        const dayKey = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'][currentDate.getDay()];
+        const isRestDay = !workoutPlan[dayKey] || workoutPlan[dayKey].exercicios.length === 0;
+
+        if (completedSet.has(dateString)) {
+            if (streak === 0 && i > 0) break;
+            streak++;
+        } else if (!isRestDay) {
+            if (i === 0 && streak === 1) continue;
+            break;
+        }
+
+        if (streak === 0 && i > 0) break;
+        currentDate.setDate(currentDate.getDate() - 1);
+    }
+    
+    return streak;
+};
 
 // @route   GET api/workout
-// @desc    Obter o plano de treino do utilizador
-// @access  Privado
+// @desc    Obter o plano de treino do utilizador e a sequência
 router.get('/', auth, async (req, res) => {
     try {
         const workout = await Workout.findOne({ user: req.user.id });
-
         if (!workout) {
-            return res.status(404).json({ msg: 'Nenhum plano de treino encontrado para este utilizador.' });
+            return res.status(404).json({ msg: 'Nenhum plano de treino encontrado.' });
         }
-
+        const streak = calculateStreak(workout.completedDays, workout.workoutPlan);
         res.json({
             workoutPlan: workout.workoutPlan,
             completedDays: workout.completedDays,
+            streak: streak,
         });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erro no servidor');
+    }
+});
+
+// @route   POST api/workout/complete/today
+// @desc    Marcar/Desmarcar o treino de HOJE como concluído
+router.post('/complete/today', auth, async (req, res) => {
+    try {
+        const workout = await Workout.findOne({ user: req.user.id });
+        if (!workout) return res.status(404).json({ msg: 'Plano de treino não encontrado.' });
+        
+        let today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const completedTodayIndex = workout.completedDays.findIndex(date => {
+            const d = new Date(date);
+            d.setHours(0, 0, 0, 0);
+            return d.getTime() === today.getTime();
+        });
+
+        if (completedTodayIndex > -1) {
+            workout.completedDays.splice(completedTodayIndex, 1);
+        } else {
+            workout.completedDays.push(today);
+        }
+        
+        await workout.save();
+        res.json(workout.completedDays);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Erro no servidor');
@@ -31,21 +100,15 @@ router.get('/', auth, async (req, res) => {
 
 // @route   POST api/workout/generate
 // @desc    Gerar um novo plano de treino
-// @access  Privado
 router.post('/generate', auth, async (req, res) => {
     const { level, focus } = req.body;
     try {
         const newWorkoutPlan = generateNewWorkoutPlan(level, focus);
-        
         const updatedWorkout = await Workout.findOneAndUpdate(
             { user: req.user.id },
-            {
-                workoutPlan: newWorkoutPlan,
-                completedDays: [],
-            },
+            { workoutPlan: newWorkoutPlan, completedDays: [] },
             { new: true, upsert: true, setDefaultsOnInsert: true }
         );
-
         res.json(updatedWorkout);
     } catch (err) {
         console.error(err.message);
@@ -53,45 +116,24 @@ router.post('/generate', auth, async (req, res) => {
     }
 });
 
-// @route   POST api/workout/complete/:dayKey
-// @desc    Marcar/Desmarcar um dia de treino como concluído
-// @access  Privado
-router.post('/complete/:dayKey', auth, async (req, res) => {
-    // ... (código da rota /complete/:dayKey permanece o mesmo)
-});
-
-
-// 👇 ROTA NOVA ADICIONADA AQUI 👇
-
 // @route   POST api/workout/manual
 // @desc    Guardar um plano de treino criado manualmente
-// @access  Privado
 router.post('/manual', auth, async (req, res) => {
     const { workoutPlan } = req.body;
-
-    // Validação básica para garantir que o plano foi enviado
     if (!workoutPlan || Object.keys(workoutPlan).length !== 7) {
         return res.status(400).json({ msg: 'Plano de treino inválido ou incompleto.' });
     }
-
     try {
-        // Usa findOneAndUpdate com 'upsert' para criar ou atualizar o plano do utilizador
         const updatedWorkout = await Workout.findOneAndUpdate(
             { user: req.user.id },
-            {
-                workoutPlan: workoutPlan,
-                completedDays: [], // Limpa os dias concluídos ao guardar um novo plano
-            },
+            { workoutPlan: workoutPlan, completedDays: [] },
             { new: true, upsert: true, setDefaultsOnInsert: true }
         );
-
         res.status(201).json(updatedWorkout);
-
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Erro no servidor');
     }
 });
-
 
 module.exports = router;

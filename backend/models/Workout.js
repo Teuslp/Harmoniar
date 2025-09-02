@@ -3,10 +3,12 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// Schema para um único exercício dentro de um plano
+// Schema para um único exercício dentro de um plano (CORRIGIDO)
 const ExerciseSchema = new Schema({
+    id: { type: String }, // ALTERADO de Number para String
     name: { type: String, required: true },
     series: { type: String, required: true },
+    muscle: { type: String, default: '' }, // ADICIONADO
     description: { type: String, default: '' },
     gifUrl: { type: String, default: '' },
 }, { _id: false });
@@ -22,9 +24,9 @@ const DailyWorkoutSchema = new Schema({
 const WorkoutSchema = new Schema({
     user: {
         type: Schema.Types.ObjectId,
-        ref: 'User', // Cria uma referência ao modelo User
+        ref: 'User',
         required: true,
-        unique: true, // Cada utilizador tem apenas um plano de treino ativo
+        unique: true,
     },
     workoutPlan: {
         seg: DailyWorkoutSchema,
@@ -36,7 +38,7 @@ const WorkoutSchema = new Schema({
         dom: DailyWorkoutSchema,
     },
     completedDays: {
-        type: [String], // ex: ['seg', 'qua']
+        type: [Date],
         default: [],
     },
 }, { timestamps: true });
