@@ -68,4 +68,72 @@ router.put(
     }
 );
 
+// 👇 ADICIONE ESTE BLOCO DE CÓDIGO NO FINAL DO FICHEIRO 👇
+
+// @route   POST api/user/weight
+// @desc    Adicionar um novo registo de peso para o utilizador
+// @access  Privado
+router.post('/weight', auth, async (req, res) => {
+    const { value } = req.body;
+
+    if (!value || isNaN(parseFloat(value)) || value <= 0) {
+        return res.status(400).json({ msg: 'Por favor, forneça um valor de peso válido.' });
+    }
+
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ msg: 'Utilizador não encontrado.' });
+        }
+
+        // Adiciona o novo registo ao histórico de peso
+        user.weightHistory.push({ value: parseFloat(value) });
+
+        await user.save();
+
+        res.status(201).json(user.weightHistory);
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erro no servidor');
+    }
+});
+
+// 👇 ROTA NOVA ADICIONADA AQUI 👇
+// @route   GET api/user/status
+// @desc    Obter os dados do utilizador e verificar se precisa de registar o humor
+// @access  Privado
+router.get('/status', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        if (!user) {
+            return res.status(404).json({ msg: 'Utilizador não encontrado.' });
+        }
+
+        let needsMoodLog = true;
+        if (user.lastMoodLogDate) {
+            const lastLog = new Date(user.lastMoodLogDate);
+            const today = new Date();
+            
+            // Compara se o último registo foi no mesmo dia, mês e ano de hoje
+            if (
+                lastLog.getDate() === today.getDate() &&
+                lastLog.getMonth() === today.getMonth() &&
+                lastLog.getFullYear() === today.getFullYear()
+            ) {
+                needsMoodLog = false;
+            }
+        }
+
+        res.json({
+            user,
+            needsMoodLog,
+        });
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Erro no servidor');
+    }
+});
+
 module.exports = router;

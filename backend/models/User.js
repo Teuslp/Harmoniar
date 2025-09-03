@@ -1,27 +1,35 @@
+// backend/models/User.js
+
 const mongoose = require('mongoose');
 
-// --- SUBDOCUMENTOS (para melhor organização) ---
+// --- SUBDOCUMENTOS ---
 
 const WeightHistorySchema = new mongoose.Schema({
     value: { type: Number, required: true },
     date: { type: Date, default: Date.now },
-}, { _id: false }); // _id: false para não criar IDs para cada entrada do histórico
+}, { _id: false });
 
 const MoodHistorySchema = new mongoose.Schema({
     mood: { 
         type: String, 
         required: true, 
-        enum: ['feliz', 'neutro', 'triste', 'ansioso', 'motivado'] // Sugestão: expandir humores
+        enum: ['feliz', 'neutro', 'triste', 'ansioso', 'motivado']
     },
     date: { type: Date, default: Date.now },
 }, { _id: false });
 
 const StudySubjectSchema = new mongoose.Schema({
     name: { type: String, required: true, trim: true },
-    weeklyGoal: { type: Number, default: 3, min: 1 }, // Meta deve ser pelo menos 1
+    weeklyGoal: { type: Number, default: 3, min: 1 },
     progress: { type: Number, default: 0, min: 0 },
     studyLog: { type: [Date], default: [] },
-}); // Aqui mantemos o _id para poder identificar/editar matérias individualmente
+});
+
+// 👇 NOVO SUBDOCUMENTO PARA AS NOTAS DE GRATIDÃO 👇
+const GratitudeEntrySchema = new mongoose.Schema({
+    text: { type: String, required: true },
+    date: { type: Date, default: Date.now },
+});
 
 // --- SCHEMA PRINCIPAL DO UTILIZADOR ---
 
@@ -29,7 +37,7 @@ const UserSchema = new mongoose.Schema({
     // --- Dados de Autenticação ---
     name: {
         type: String,
-        required: [true, 'O nome é obrigatório.'], // Mensagem de erro personalizada
+        required: [true, 'O nome é obrigatório.'],
         trim: true,
     },
     email: {
@@ -37,7 +45,7 @@ const UserSchema = new mongoose.Schema({
         required: [true, 'O email é obrigatório.'],
         unique: true,
         trim: true,
-        lowercase: true, // Garante consistência para o índice 'unique'
+        lowercase: true,
         match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Por favor, insira um email válido.'],
     },
     password: {
@@ -61,6 +69,9 @@ const UserSchema = new mongoose.Schema({
         enum: ['emagrecer', 'manter', 'ganharMassa'],
         default: 'manter',
     },
+    lastMoodLogDate: {
+        type: Date,
+    },
 
     // --- Dados dos Módulos (usando os subdocumentos) ---
     motivationalPeople: {
@@ -71,6 +82,9 @@ const UserSchema = new mongoose.Schema({
     moodHistory: [MoodHistorySchema],
     studySubjects: [StudySubjectSchema],
 
-}, { timestamps: true }); // Adiciona createdAt e updatedAt
+    // 👇 ADIÇÃO DO NOVO CAMPO DE GRATIDÃO 👇
+    gratitudeEntries: [GratitudeEntrySchema],
+
+}, { timestamps: true });
 
 module.exports = mongoose.model('User', UserSchema);
