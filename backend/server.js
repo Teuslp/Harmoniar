@@ -30,11 +30,12 @@ app.get('/api/health', (req, res) => {
 
 // Importação e utilização das rotas da aplicação
 app.use('/api/auth', require('./routes/auth'));
-app.use('/api/user', require('./routes/user')); // Rota de utilizador agora registada
+app.use('/api/user', require('./routes/user')); 
 app.use('/api/mental-health', require('./routes/mentalHealth'));
 app.use('/api/workout', require('./routes/workout'));
 app.use('/api/nutrition', require('./routes/nutrition'));
-app.use('/api/exercises', require('./routes/exercises')); // Nova rota para exercícios
+app.use('/api/exercises', require('./routes/exercises'));
+app.use('/api/study', require('./routes/study')); 
 
 // --- INICIALIZAÇÃO DO SERVIDOR ---
 const PORT = process.env.PORT;
