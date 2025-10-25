@@ -1,14 +1,18 @@
-// src/pages/TreinoPage.jsx
+// src/pages/TreinoPage.jsx (Versão com Resumo Pós-Treino)
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../services/api';
 
-import {
-    CheckCircle, X, Dumbbell, Clock, Target, Wand, Edit, FireIcon
-} from '../components/Icons';
+// Ícones
+import { CheckCircle, X, Wand, Edit, FireIcon, CheckSquare, Square, BarChart2 } from '../components/Icons';
 
-// --- Subcomponentes ---
+// Componentes
+import WorkoutSummaryModal from '../components/WorkoutSummaryModal';
+import ExerciseHistoryModal from '../components/ExerciseHistoryModal';
+
+
+// --- SUBCOMPONENTES DA PÁGINA ---
 
 const StreakCounter = ({ streak }) => (
     <div className="bg-white p-6 rounded-2xl shadow-sm text-center">
@@ -22,6 +26,7 @@ const StreakCounter = ({ streak }) => (
 );
 
 const WorkoutCalendar = ({ completedDays, selectedDate, onDateSelect }) => {
+    // (O código do seu WorkoutCalendar continua exatamente o mesmo aqui)
     const [currentMonth, setCurrentMonth] = useState(selectedDate.getMonth());
     const [currentYear, setCurrentYear] = useState(selectedDate.getFullYear());
 
@@ -36,7 +41,7 @@ const WorkoutCalendar = ({ completedDays, selectedDate, onDateSelect }) => {
 
     const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
     const firstDayOfMonth = new Date(currentYear, currentMonth, 1).getDay();
-    const monthName = new Date(currentYear, currentMonth).toLocaleString('pt-BR', { month: 'long' });
+    const monthName = new Date(currentYear, currentMonth).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
 
     let calendarDays = Array.from({ length: firstDayOfMonth }, (_, i) => <div key={`empty-${i}`} className="w-10 h-10"></div>);
 
@@ -49,13 +54,9 @@ const WorkoutCalendar = ({ completedDays, selectedDate, onDateSelect }) => {
 
         calendarDays.push(
             <div key={day} className="flex flex-col items-center">
-                <button 
+                <button
                     onClick={() => onDateSelect(date)}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors
-                        ${isSelected ? 'bg-violet-600 text-white' : ''}
-                        ${!isSelected && isToday ? 'bg-violet-100 text-violet-700' : ''}
-                        ${!isSelected && !isToday ? 'hover:bg-gray-200' : ''}
-                    `}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-colors ${isSelected ? 'bg-violet-600 text-white' : ''} ${!isSelected && isToday ? 'bg-violet-100 text-violet-700' : ''} ${!isSelected && !isToday ? 'hover:bg-gray-200' : ''}`}
                 >
                     {day}
                 </button>
@@ -66,7 +67,7 @@ const WorkoutCalendar = ({ completedDays, selectedDate, onDateSelect }) => {
 
     return (
         <div className="bg-white p-6 rounded-2xl shadow-sm">
-            <h3 className="text-xl font-bold text-gray-800 mb-4 capitalize">{monthName} {currentYear}</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-4 capitalize">{monthName}</h3>
             <div className="grid grid-cols-7 gap-2 text-center text-sm font-medium text-gray-500 mb-2">
                 {['D', 'S', 'T', 'Q', 'Q', 'S', 'S'].map((day, index) => <div key={index}>{day}</div>)}
             </div>
@@ -77,56 +78,28 @@ const WorkoutCalendar = ({ completedDays, selectedDate, onDateSelect }) => {
     );
 };
 
-const TutorialModal = ({ isOpen, onClose, exercise }) => {
-    if (!isOpen || !exercise) return null;
-    return (
-        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-lg relative animate-scale-in">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"><X className="w-6 h-6" /></button>
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">{exercise.name}</h3>
-                <div className="w-full h-56 bg-gray-200 rounded-lg mb-4 flex items-center justify-center overflow-hidden">
-                    <img src={exercise.gifUrl || 'https://placehold.co/400x300/e2e8f0/a0aec0?text=Tutorial'} alt={`Animação para ${exercise.name}`} className="w-full h-full object-cover" />
-                </div>
-                <p className="text-gray-600">{exercise.description}</p>
-            </div>
-        </div>
-    );
-};
-
 const WorkoutGeneratorModal = ({ isOpen, onClose, onGenerate }) => {
-    // Hooks movidos para o topo, ANTES da condição de retorno
+    // (O código do seu WorkoutGeneratorModal continua exatamente o mesmo aqui)
     const [level, setLevel] = useState('iniciante');
     const [focus, setFocus] = useState('manter');
-
     if (!isOpen) return null;
-
     const handleGenerateClick = () => { onGenerate(level, focus); };
     const OptionButton = ({ value, state, setState, children }) => (
         <button onClick={() => setState(value)} className={`flex-1 p-3 text-sm font-semibold rounded-lg transition-colors ${state === value ? 'bg-violet-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>{children}</button>
     );
-
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-lg relative animate-scale-in">
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4 backdrop-blur-sm">
+            <div className="bg-white rounded-2xl shadow-2xl p-6 sm:p-8 w-full max-w-lg relative">
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X className="w-6 h-6" /></button>
-                <h3 className="text-2xl font-bold text-gray-800 mb-4">Gerador de Treino</h3>
-                <p className="text-gray-600 mb-6">Selecione as suas preferências para gerarmos um treino personalizado para si.</p>
+                <h3 className="text-2xl font-bold text-gray-800 mb-6">Gerador de Treino</h3>
                 <div className="space-y-6">
                     <div>
-                        <label className="block text-lg font-semibold text-gray-700 mb-2">Qual é o seu nível?</label>
-                        <div className="flex space-x-2">
-                            <OptionButton value="iniciante" state={level} setState={setLevel}>Iniciante</OptionButton>
-                            <OptionButton value="intermediario" state={level} setState={setLevel}>Intermediário</OptionButton>
-                            <OptionButton value="avancado" state={level} setState={setLevel}>Avançado</OptionButton>
-                        </div>
+                        <label className="block text-lg font-semibold text-gray-700 mb-2">Seu nível?</label>
+                        <div className="flex space-x-2"><OptionButton value="iniciante" state={level} setState={setLevel}>Iniciante</OptionButton><OptionButton value="intermediario" state={level} setState={setLevel}>Intermediário</OptionButton><OptionButton value="avancado" state={level} setState={setLevel}>Avançado</OptionButton></div>
                     </div>
                     <div>
-                        <label className="block text-lg font-semibold text-gray-700 mb-2">Qual é o seu foco?</label>
-                        <div className="flex space-x-2">
-                            <OptionButton value="emagrecer" state={focus} setState={setFocus}>Emagrecer</OptionButton>
-                            <OptionButton value="manter" state={focus} setState={setFocus}>Manter</OptionButton>
-                            <OptionButton value="ganharMassa" state={focus} setState={setFocus}>Ganhar Massa</OptionButton>
-                        </div>
+                        <label className="block text-lg font-semibold text-gray-700 mb-2">Seu foco?</label>
+                        <div className="flex space-x-2"><OptionButton value="emagrecer" state={focus} setState={setFocus}>Emagrecer</OptionButton><OptionButton value="manter" state={focus} setState={setFocus}>Manter</OptionButton><OptionButton value="ganharMassa" state={focus} setState={setFocus}>Ganhar Massa</OptionButton></div>
                     </div>
                 </div>
                 <div className="mt-8 border-t pt-6">
@@ -134,8 +107,8 @@ const WorkoutGeneratorModal = ({ isOpen, onClose, onGenerate }) => {
                         <Wand className="w-5 h-5 mr-2" />
                         Gerar Treino Automático
                     </button>
-                    <Link 
-                        to="/treino/criar" 
+                    <Link
+                        to="/treino/criar"
                         onClick={onClose}
                         className="w-full flex items-center justify-center mt-3 bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors"
                     >
@@ -148,33 +121,53 @@ const WorkoutGeneratorModal = ({ isOpen, onClose, onGenerate }) => {
     );
 };
 
-// --- Componente Principal da Página ---
+const SimpleExerciseItem = ({ exercise, isDone, onToggle }) => (
+    <div
+        onClick={onToggle}
+        className={`p-4 rounded-lg flex items-center gap-4 cursor-pointer transition-all duration-200 ${isDone ? 'bg-green-100 text-gray-500' : 'bg-gray-50 hover:bg-violet-50'}`}
+    >
+        {isDone ? <CheckSquare className="w-6 h-6 text-green-500 flex-shrink-0" /> : <Square className="w-6 h-6 text-gray-400 flex-shrink-0" />}
+        <div className="flex-grow">
+            <p className={`font-bold text-gray-800 ${isDone && 'line-through'}`}>{exercise.name}</p>
+            <p className={`text-sm text-gray-500 ${isDone && 'line-through'}`}>{exercise.series}</p>
+        </div>
+    </div>
+);
+
+
+// --- COMPONENTE PRINCIPAL DA PÁGINA ---
 export default function TreinoPage() {
-    const [activeWorkout, setActiveWorkout] = useState(null);
-    const [completedDays, setCompletedDays] = useState([]);
-    const [streak, setStreak] = useState(0);
+    const [workoutPlan, setWorkoutPlan] = useState(null);
+    const [completedSessions, setCompletedSessions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState('');
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [isGeneratorOpen, setGeneratorOpen] = useState(false);
-    const [isTutorialModalOpen, setTutorialModalOpen] = useState(false);
-    const [selectedExercise, setSelectedExercise] = useState(null);
 
-    const fetchWorkoutData = async () => {
+    // Estado do fluxo "Resumo Pós-Treino"
+    const [isWorkoutActive, setIsWorkoutActive] = useState(false);
+    const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+    const [doneExercises, setDoneExercises] = useState(new Set());
+    const [historyModalOpen, setHistoryModalOpen] = useState(false);
+    const [historyExerciseName, setHistoryExerciseName] = useState(null);
+
+    const dayMap = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
+    const todayKey = dayMap[new Date().getDay()];
+
+    const fetchData = async () => {
+        setIsLoading(true);
         try {
-            const response = await api.get('/workout');
-            setActiveWorkout(response.data.workoutPlan);
-            setCompletedDays(response.data.completedDays);
-            setStreak(response.data.streak);
-            setError('');
+            const [planRes, sessionsRes] = await Promise.all([
+                api.get('/workout/plan'),
+                api.get('/workout/sessions')
+            ]);
+            setWorkoutPlan(planRes.data.workoutPlan);
+            setCompletedSessions(sessionsRes.data);
         } catch (err) {
             if (err.response && err.response.status === 404) {
-                setActiveWorkout(null);
-                setStreak(0);
-                setCompletedDays([]);
-                setError(null);
+                setWorkoutPlan(null);
+                setCompletedSessions([]);
             } else {
-                setError("Não foi possível carregar o seu plano de treino.");
+                console.error("Erro ao buscar dados de treino:", err);
             }
         } finally {
             setIsLoading(false);
@@ -182,57 +175,109 @@ export default function TreinoPage() {
     };
 
     useEffect(() => {
-        fetchWorkoutData();
+        fetchData();
     }, []);
+
+    const handleStartWorkout = () => {
+        setDoneExercises(new Set());
+        setIsWorkoutActive(true);
+    };
+
+    const handleOpenHistory = (exerciseName) => {
+        setHistoryExerciseName(exerciseName);
+        setHistoryModalOpen(true);
+    };
+
+    const handleToggleExercise = (exerciseName) => {
+        const newSet = new Set(doneExercises);
+        if (newSet.has(exerciseName)) {
+            newSet.delete(exerciseName);
+        } else {
+            newSet.add(exerciseName);
+        }
+        setDoneExercises(newSet);
+    };
+
+    const handleFinishWorkout = () => {
+        setIsWorkoutActive(false);
+        // Só abre o resumo se pelo menos um exercício foi feito
+        if (doneExercises.size > 0) {
+            setIsSummaryOpen(true);
+        }
+    };
+
+    const handleSaveSession = async (exercisesWithWeight) => {
+        const sessionData = {
+            workoutName: workoutPlan[todayKey].nome,
+            exercises: exercisesWithWeight.filter(ex => doneExercises.has(ex.name)),
+        };
+
+        if (sessionData.exercises.length === 0) {
+            setIsSummaryOpen(false);
+            return;
+        };
+
+        try {
+            await api.post('/workout/session', sessionData);
+            setIsSummaryOpen(false);
+            fetchData(); // Atualiza calendário e streak
+        } catch (err) {
+            console.error("Erro ao guardar a sessão:", err);
+        }
+    };
 
     const handleGenerate = async (level, focus) => {
         setGeneratorOpen(false);
         setIsLoading(true);
         try {
             await api.post('/workout/generate', { level, focus });
-            await fetchWorkoutData();
+            fetchData();
         } catch (err) {
-            setError("Não foi possível gerar um novo treino.");
+            console.error("Erro ao gerar novo treino:", err);
         }
-        setIsLoading(false);
-    };
-
-    const handleToggleCompleteToday = async () => {
-        try {
-            await api.post(`/workout/complete/today`);
-            await fetchWorkoutData();
-        } catch (err) {
-            setError("Ocorreu um erro ao atualizar o seu progresso.");
-        }
-    };
-
-    const handleOpenTutorial = (exercise) => {
-        setSelectedExercise(exercise);
-        setTutorialModalOpen(true);
     };
 
     if (isLoading) {
         return <div className="p-8 text-center">A carregar o seu plano de treino...</div>;
     }
-    
-    if (error) {
-        return <div className="p-4 bg-red-100 text-red-700 rounded-lg">{error}</div>;
+
+    // TELA DE TREINO ATIVO
+    if (isWorkoutActive) {
+        const activeWorkout = workoutPlan[todayKey];
+        return (
+            <>
+                <div className="space-y-4">
+                    <h2 className="text-3xl font-bold text-gray-800">Treino em Andamento: {activeWorkout.nome}</h2>
+                    <p className="text-gray-600">Marque os exercícios que concluir.</p>
+                    <div className="space-y-3 pt-4">
+                        {activeWorkout.exercicios.map((ex, index) => (
+                            <SimpleExerciseItem
+                                key={index}
+                                exercise={ex}
+                                isDone={doneExercises.has(ex.name)}
+                                onToggle={() => handleToggleExercise(ex.name)}
+                            />
+                        ))}
+                    </div>
+                    <div className="flex gap-4 pt-4">
+                        <button onClick={handleFinishWorkout} className="flex-1 bg-violet-600 text-white font-bold py-3 rounded-lg hover:bg-violet-700">Finalizar e Resumir</button>
+                        <button onClick={() => setIsWorkoutActive(false)} className="flex-1 bg-gray-300 font-semibold py-3 rounded-lg hover:bg-gray-400">Descartar</button>
+                    </div>
+                </div>
+            </>
+        );
     }
 
-    const dayMap = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sab'];
-    const selectedDayKey = dayMap[selectedDate.getDay()];
-    const currentWorkoutForSelectedDay = activeWorkout ? activeWorkout[selectedDayKey] : null;
-    const todayString = new Date().toISOString().slice(0, 10);
-    const isTodaySelected = selectedDate.toISOString().slice(0, 10) === todayString;
-    const isTodayCompleted = completedDays.some(d => new Date(d).toISOString().slice(0, 10) === todayString);
+    const todaysPlan = workoutPlan ? workoutPlan[todayKey] : null;
 
+    // TELA PRINCIPAL (VISÃO GERAL)
     return (
         <>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg-col-span-1 space-y-6">
-                    <StreakCounter streak={streak} />
-                    <WorkoutCalendar 
-                        completedDays={completedDays} 
+                <div className="lg:col-span-1 space-y-6">
+                    <StreakCounter streak={completedSessions.length} />
+                    <WorkoutCalendar
+                        completedDays={completedSessions.map(s => s.date)}
                         selectedDate={selectedDate}
                         onDateSelect={setSelectedDate}
                     />
@@ -240,55 +285,63 @@ export default function TreinoPage() {
                         <h3 className="text-xl font-bold text-gray-800 mb-4">Opções</h3>
                         <button onClick={() => setGeneratorOpen(true)} className="w-full flex items-center justify-center bg-gray-800 text-white font-semibold py-3 px-4 rounded-lg hover:bg-black transition-colors">
                             <Wand className="w-5 h-5 mr-2" />
-                            Gerar Novo Treino
+                            Gerar/Editar Plano
                         </button>
                     </div>
                 </div>
                 <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm">
-                    {!activeWorkout ? (
-                         <div className="text-center p-8">
-                            <p className="mb-4 text-gray-600">Nenhum plano de treino encontrado.</p>
-                            <button onClick={() => setGeneratorOpen(true)} className="mt-4 bg-violet-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-violet-700">
+                    {!workoutPlan ? (
+                        <div className="text-center p-8">
+                            <h3 className="text-xl font-bold text-gray-800 mb-2">Bem-vindo ao seu diário de treinos!</h3>
+                            <p className="mb-6 text-gray-600">Parece que você ainda não tem um plano. Gere um para começar.</p>
+                            <button onClick={() => setGeneratorOpen(true)} className="bg-violet-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-violet-700">
                                 Gerar Primeiro Treino
                             </button>
                         </div>
                     ) : (
                         <>
-                            <h2 className="text-2xl font-bold text-gray-800 mb-1">Treino de {currentWorkoutForSelectedDay.nome}</h2>
-                            <p className="text-gray-500 mb-6">Foco em {currentWorkoutForSelectedDay.foco.join(' e ')}</p>
+                            <h2 className="text-2xl font-bold text-gray-800 mb-1">Treino de {selectedDate.toLocaleDateString('pt-BR', { weekday: 'long' })}</h2>
+                            <p className="text-gray-500 mb-6">Foco em {workoutPlan[dayMap[selectedDate.getDay()]]?.foco.join(' e ') || 'Descanso'}</p>
                             <div className="space-y-4">
-                                {currentWorkoutForSelectedDay.exercicios.length > 0 ? (
-                                    currentWorkoutForSelectedDay.exercicios.map((exercise, index) => (
-                                        <div key={index} className="bg-gray-50 p-4 rounded-lg flex items-center justify-between hover:bg-violet-50 transition-colors">
-                                            <div>
-                                                <p className="font-bold text-gray-800">{exercise.name}</p>
-                                                <p className="text-sm text-gray-500">{exercise.series}</p>
+                                {todaysPlan && todaysPlan.exercicios.length > 0 ? (
+                                    <>
+                                        {todaysPlan.exercicios.map((ex, i) => (
+                                            <div key={i} className="bg-gray-100 p-4 rounded-lg flex items-center justify-between">
+                                                <div><p className="font-bold text-gray-800">{ex.name}</p><p className="text-sm text-gray-500">{ex.series}</p></div>
+                                                <button onClick={() => handleOpenHistory(ex.name)} className="p-2 text-gray-500 hover:text-violet-600 transition-colors">
+                                                    <BarChart2 className="w-5 h-5" />
+                                                </button>
                                             </div>
-                                            <button onClick={() => handleOpenTutorial(exercise)} className="text-sm font-semibold text-violet-600 hover:text-violet-800">Ver Tutorial</button>
-                                        </div>
-                                    ))
+                                        ))}
+                                        {new Date().toISOString().slice(0, 10) === selectedDate.toISOString().slice(0, 10) && (
+                                            <button onClick={handleStartWorkout} className="w-full mt-6 bg-violet-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-violet-700">
+                                                Começar Treino de Hoje
+                                            </button>
+                                        )}
+                                    </>
                                 ) : (
-                                    <div className="text-center py-10 text-gray-500">Hoje é dia de descanso.</div>
+                                    <div className="text-center py-10 text-gray-500">Hoje é dia de descanso. Aproveite para recuperar!</div>
                                 )}
                             </div>
-                            {isTodaySelected && currentWorkoutForSelectedDay.exercicios.length > 0 && (
-                                <button onClick={handleToggleCompleteToday} className={`w-full mt-6 font-semibold py-3 px-4 rounded-lg transition-colors ${isTodayCompleted ? 'bg-green-500 hover:bg-green-600 text-white' : 'bg-violet-500 hover:bg-violet-600 text-white'}`}>
-                                    {isTodayCompleted ? 'Treino de Hoje Concluído!' : 'Marcar Treino de Hoje como Concluído'}
-                                </button>
-                            )}
                         </>
                     )}
                 </div>
             </div>
-            <TutorialModal
-                isOpen={isTutorialModalOpen}
-                onClose={() => setTutorialModalOpen(false)}
-                exercise={selectedExercise}
-            />
             <WorkoutGeneratorModal
                 isOpen={isGeneratorOpen}
                 onClose={() => setGeneratorOpen(false)}
                 onGenerate={handleGenerate}
+            />
+            <WorkoutSummaryModal
+                isOpen={isSummaryOpen}
+                onClose={() => setIsSummaryOpen(false)}
+                workoutPlan={todaysPlan}
+                onSave={handleSaveSession}
+            />
+            <ExerciseHistoryModal
+                isOpen={historyModalOpen}
+                onClose={() => setHistoryModalOpen(false)}
+                exerciseName={historyExerciseName}
             />
         </>
     );

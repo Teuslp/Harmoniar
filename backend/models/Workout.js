@@ -3,25 +3,24 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
-// Schema para um único exercício dentro de um plano (CORRIGIDO)
-const ExerciseSchema = new Schema({
-    id: { type: String }, // ALTERADO de Number para String
+// --- SCHEMA PARA O PLANO DE TREINO (O QUE O USUÁRIO DEVE FAZER) ---
+
+const PlannedExerciseSchema = new Schema({
+    id: { type: String },
     name: { type: String, required: true },
     series: { type: String, required: true },
-    muscle: { type: String, default: '' }, // ADICIONADO
-    description: { type: String, default: '' },
-    gifUrl: { type: String, default: '' },
+    muscle: { type: String },
+    description: { type: String },
+    gifUrl: { type: String },
 }, { _id: false });
 
-// Schema para o treino de um dia específico
-const DailyWorkoutSchema = new Schema({
+const DailyWorkoutPlanSchema = new Schema({
     nome: { type: String, required: true },
-    foco: { type: [String], default: [] },
-    tempo: { type: Number, default: 0 },
-    exercicios: [ExerciseSchema],
+    foco: { type: [String] },
+    exercicios: [PlannedExerciseSchema],
 }, { _id: false });
 
-const WorkoutSchema = new Schema({
+const WorkoutPlanSchema = new Schema({
     user: {
         type: Schema.Types.ObjectId,
         ref: 'User',
@@ -29,18 +28,39 @@ const WorkoutSchema = new Schema({
         unique: true,
     },
     workoutPlan: {
-        seg: DailyWorkoutSchema,
-        ter: DailyWorkoutSchema,
-        qua: DailyWorkoutSchema,
-        qui: DailyWorkoutSchema,
-        sex: DailyWorkoutSchema,
-        sab: DailyWorkoutSchema,
-        dom: DailyWorkoutSchema,
-    },
-    completedDays: {
-        type: [Date],
-        default: [],
+        seg: DailyWorkoutPlanSchema,
+        ter: DailyWorkoutPlanSchema,
+        qua: DailyWorkoutPlanSchema,
+        qui: DailyWorkoutPlanSchema,
+        sex: DailyWorkoutPlanSchema,
+        sab: DailyWorkoutPlanSchema,
+        dom: DailyWorkoutPlanSchema,
     },
 }, { timestamps: true });
 
-module.exports = mongoose.model('Workout', WorkoutSchema);
+
+// --- SCHEMA PARA A SESSÃO DE TREINO (O QUE O USUÁRIO REALMENTE FEZ) ---
+
+const PerformedExerciseSchema = new Schema({
+    name: { type: String, required: true },
+    // A mudança principal: em vez de um array de séries, guardamos apenas o peso principal
+    weight: { type: Number, required: true }, 
+}, { _id: false });
+
+const WorkoutSessionSchema = new Schema({
+    user: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+        index: true,
+    },
+    date: { type: Date, default: Date.now },
+    workoutName: { type: String }, // Ex: "Peito e Tríceps"
+    exercises: [PerformedExerciseSchema],
+});
+
+// Exportamos os dois modelos em um objeto para uso nas rotas
+module.exports = {
+    WorkoutPlan: mongoose.model('WorkoutPlan', WorkoutPlanSchema),
+    WorkoutSession: mongoose.model('WorkoutSession', WorkoutSessionSchema),
+};
